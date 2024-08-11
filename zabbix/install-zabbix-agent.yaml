@@ -12,6 +12,11 @@
       register: zabbix_agent2_installed
       ignore_errors: yes
 
+    - name: Check if Docker is installed
+      command: docker --version
+      register: docker_installed
+      ignore_errors: yes
+
     - name: Install Zabbix repository and agent
       apt:
         deb: https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest+ubuntu{{ ansible_distribution_version }}_all.deb
@@ -36,6 +41,13 @@
         owner: root
         group: root
         mode: '0644'
+
+    - name: Add zabbix user to docker group
+      user:
+        name: zabbix
+        groups: docker
+        append: yes
+      when: docker_installed.rc == 0
 
     - name: Start and enable zabbix agent
       service:
