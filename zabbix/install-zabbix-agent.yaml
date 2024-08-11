@@ -1,39 +1,43 @@
-- 
- name: Installing Agent
- hosts: linuxservers
- tasks:
-  - name: Gather facts
-    ansible.builtin.setup:
-      gather_subset:
-        - "packages"
+- name: Installing Agent
+  hosts: linuxservers
+  tasks:
+    - name: Gather package manager facts
+      ansible.builtin.setup:
+        gather_subset:
+          - "pkg_mgr"
 
-  - name: 'Installing repository and agent'
-    apt:
-      deb: https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest%2Bubuntu{{ ansible_distribution_version }}_all.deb
-    when:
-      - ansible_distribution|string == 'Ubuntu'
-      - ansible_distribution_major_version  in ['20','22','24']
-      - "'zabbix-agent2' not in ansible_facts.packages"
-  
-  - name: Install zabbix agent2 on Ubuntu
-    apt:
-      name: zabbix-agent2
-      update_cache: yes
-    when:
-      - ansible_distribution|string == 'Ubuntu'
-      - ansible_distribution_major_version  in ['20','22','24']
-      - "'zabbix-agent2' not in ansible_facts.packages"
-  
-  - name: Copy zabbix agent configuration file
-    copy:
-      src: ./zabbix_agent2.conf
-      dest: /etc/zabbix/zabbix_agent2.conf
-      owner: root
-      group: root
-      mode: '0644'
-  
-  - name: Start and enable zabbix agent
-    service:
-      name: zabbix-agent2
-      state: started
-      enabled: yes
+    - name: Check if zabbix-agent2 is installed
+      ansible.builtin.shell: dpkg -l | grep zabbix-agent2
+      register: zabbix_agent2_installed
+      ignore_errors: yes
+
+    - name: Install Zabbix repository and agent
+      apt:
+        deb: https://repo.zabbix.com/zabbix/7.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest+ubuntu{{ ansible_distribution_version }}_all.deb
+      when:
+        - ansible_distribution == 'Ubuntu'
+        - ansible_distribution_major_version in ['20', '22', '24']
+        - zabbix_agent2_installed.rc != 0
+
+    - name: Install zabbix-agent2 on Ubuntu
+      apt:
+        name: zabbix-agent2
+        update_cache: yes
+      when:
+        - ansible_distribution == 'Ubuntu'
+        - ansible_distribution_major_version in ['20', '22', '24']
+        - zabbix_agent2_installed.rc != 0
+
+    - name: Copy zabbix agent configuration file
+      copy:
+        src: ./zabbix_agent2.conf
+        dest: /etc/zabbix/zabbix_agent2.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Start and enable zabbix agent
+      service:
+        name: zabbix-agent2
+        state: started
+        enabled: yes
