@@ -40,5 +40,5 @@
     - name: Start and enable zabbix agent
       service:
         name: zabbix-agent2
-        state: started
+        state: restarted
         enabled: yes
