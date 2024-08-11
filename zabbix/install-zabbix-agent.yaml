@@ -1,5 +1,6 @@
 - name: Installing Agent
   hosts: linuxservers
+  become: yes
   tasks:
     - name: Gather package manager facts
       ansible.builtin.setup:
@@ -7,7 +8,7 @@
           - "pkg_mgr"
 
     - name: Check if zabbix-agent2 is installed
-      ansible.builtin.shell: dpkg -l | grep zabbix-agent2
+      ansible.builtin.command: dpkg -l | grep zabbix-agent2
       register: zabbix_agent2_installed
       ignore_errors: yes
 
